@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useKnowledgeGraph } from './hooks/useKnowledgeGraph';
 import ForceGraph2D, {
   type ForceGraphMethods,
@@ -32,23 +32,28 @@ function App() {
   };
 
   // Filter links dynamically based on similarity threshold
-  const filteredLinks = graphData.links.filter(
-    (link) => link.similarity >= similarityThreshold,
+  const filteredLinks = useMemo(
+    () =>
+      graphData.links.filter((link) => link.similarity >= similarityThreshold),
+    [graphData.links, similarityThreshold],
   );
 
   // Dynamically calculate connected neighbors
-  const neighbors = new Set<string>();
-  if (selectedNoteId) {
-    filteredLinks.forEach((link) => {
-      const sourceId = getNoteId(link.source);
-      const targetId = getNoteId(link.target);
-      if (sourceId === selectedNoteId) {
-        neighbors.add(targetId);
-      } else if (targetId === selectedNoteId) {
-        neighbors.add(sourceId);
-      }
-    });
-  }
+  const neighbors = useMemo(() => {
+    const result = new Set<string>();
+    if (selectedNoteId) {
+      filteredLinks.forEach((link) => {
+        const sourceId = getNoteId(link.source);
+        const targetId = getNoteId(link.target);
+        if (sourceId === selectedNoteId) {
+          result.add(targetId);
+        } else if (targetId === selectedNoteId) {
+          result.add(sourceId);
+        }
+      });
+    }
+    return result;
+  }, [filteredLinks, selectedNoteId]);
 
   // Update forces when links change
   useEffect(() => {
@@ -96,85 +101,92 @@ function App() {
   const selectedNote = notes.find((n) => n.id === selectedNoteId);
 
   // Calculate similarity rankings for the selected note
-  const relatedNotes = selectedNote
-    ? notes
-        .filter((n) => n.id !== selectedNote.id)
-        .map((n) => {
-          const sim = cosineSimilarity(
-            Array.from(selectedNote.embedding),
-            Array.from(n.embedding),
-          );
-          return { note: n, similarity: sim };
-        })
-        .filter((item) => item.similarity >= similarityThreshold)
-        .sort((a, b) => b.similarity - a.similarity)
-    : [];
+  const relatedNotes = useMemo(
+    () =>
+      selectedNote
+        ? notes
+            .filter((n) => n.id !== selectedNote.id)
+            .map((n) => {
+              const sim = cosineSimilarity(
+                Array.from(selectedNote.embedding),
+                Array.from(n.embedding),
+              );
+              return { note: n, similarity: sim };
+            })
+            .filter((item) => item.similarity >= similarityThreshold)
+            .sort((a, b) => b.similarity - a.similarity)
+        : [],
+    [notes, selectedNote, similarityThreshold],
+  );
 
   const isModelLoading =
     progress.status === 'downloading' || progress.status === 'loading';
 
   // Node drawing routine
-  const drawNode = (
-    node: NodeObject<GraphNode>,
-    ctx: CanvasRenderingContext2D,
-    globalScale: number,
-  ) => {
-    const isSelected = node.id === selectedNoteId;
-    const isNeighbor =
-      selectedNoteId !== null && neighbors.has(node.id as string);
-    const label = node.label || '';
+  const drawNode = useCallback(
+    (
+      node: NodeObject<GraphNode>,
+      ctx: CanvasRenderingContext2D,
+      globalScale: number,
+    ) => {
+      const isSelected = node.id === selectedNoteId;
+      const isNeighbor =
+        selectedNoteId !== null && neighbors.has(node.id as string);
+      const label = node.label || '';
 
-    // Search query matches
-    const isSearchMatch =
-      searchQuery.trim() !== '' &&
-      label.toLowerCase().includes(searchQuery.toLowerCase());
+      // Search query matches
+      const isSearchMatch =
+        searchQuery.trim() !== '' &&
+        label.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Compute sizing
-    const radius = isSelected ? 8 : isNeighbor ? 6 : 5;
+      // Compute sizing
+      const radius = isSelected ? 8 : isNeighbor ? 6 : 5;
 
-    ctx.beginPath();
-    ctx.arc(node.x || 0, node.y || 0, radius, 0, 2 * Math.PI, false);
+      ctx.beginPath();
+      ctx.arc(node.x || 0, node.y || 0, radius, 0, 2 * Math.PI, false);
 
-    // Apply color palettes
-    if (isSelected) {
-      ctx.fillStyle = '#58a6ff'; // Bright accent blue
-    } else if (isNeighbor) {
-      ctx.fillStyle = '#388bfd'; // Secondary light blue
-    } else if (searchQuery && !isSearchMatch) {
-      ctx.fillStyle = '#21262d'; // Dimmed inactive node
-    } else {
-      ctx.fillStyle = '#8b949e'; // Neutral standard gray
-    }
-    ctx.fill();
+      // Apply color palettes
+      if (isSelected) {
+        ctx.fillStyle = '#58a6ff';
+      } else if (isNeighbor) {
+        ctx.fillStyle = '#388bfd';
+      } else if (searchQuery && !isSearchMatch) {
+        ctx.fillStyle = '#21262d';
+      } else {
+        ctx.fillStyle = '#8b949e';
+      }
+      ctx.fill();
 
-    // Outline style for focus
-    if (isSelected || isSearchMatch) {
-      ctx.strokeStyle = '#f2cc60'; // Gold circle highlight
-      ctx.lineWidth = 1.5 / globalScale;
-      ctx.stroke();
-    }
+      // Outline style for focus
+      if (isSelected || isSearchMatch) {
+        ctx.strokeStyle = '#f2cc60';
+        ctx.lineWidth = 1.5 / globalScale;
+        ctx.stroke();
+      }
 
-    // Font layout scaling
-    const fontSize = 11 / globalScale;
-    ctx.font = `${fontSize}px system-ui, -apple-system, sans-serif`;
+      // Font layout scaling
+      const fontSize = 11 / globalScale;
+      ctx.font = `${fontSize}px system-ui, -apple-system, sans-serif`;
 
-    if (globalScale > 0.8 || isSelected || isSearchMatch) {
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillStyle = isSelected
-        ? '#58a6ff'
-        : searchQuery && !isSearchMatch
-          ? '#30363d'
-          : '#c9d1d9';
-      ctx.fillText(label, node.x || 0, (node.y || 0) + radius + 3);
-    }
-  };
+      if (globalScale > 0.8 || isSelected || isSearchMatch) {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = isSelected
+          ? '#58a6ff'
+          : searchQuery && !isSearchMatch
+            ? '#30363d'
+            : '#c9d1d9';
+        ctx.fillText(label, node.x || 0, (node.y || 0) + radius + 3);
+      }
+    },
+    [selectedNoteId, neighbors, searchQuery],
+  );
 
-  const handleNodeClick = (node: NodeObject<GraphNode>) => {
+  const handleNodeClick = useCallback((node: NodeObject<GraphNode>) => {
     setSelectedNoteId((prev) =>
       prev === node.id ? null : (node.id as string),
     );
-  };
+  }, []);
 
   return (
     <div className="app-container">

@@ -100,4 +100,8 @@ Date: 13 July 2026
 ### Files Modified
 - `src/App.tsx` - Added interactive UI controls (search input, similarity threshold slider), custom HTML5 Canvas drawing for nodes (showing labels, selection sizes, neighbor color groups, and inactive dimming), and note details panel with percentage similarity list
 - `src/App.css` - Wrote comprehensive stylesheet incorporating layout panels, details view, scrollbars, and glassmorphism styling
-- `MAIN_LOG.md` - Documented activities for Phase 5
+- `MAIN_LOG.md` - Documented activities for Phase 5
+
+### Review Fixes (Agent 1)
+- `src/App.tsx` - Wrapped filteredLinks, neighbors, and relatedNotes in useMemo to avoid recomputation on every render
+- `src/App.tsx` - Wrapped drawNode and handleNodeClick in useCallback to prevent unnecessary graph re-renders
