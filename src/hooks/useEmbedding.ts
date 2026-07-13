@@ -18,14 +18,45 @@ export function useEmbedding() {
   );
 
   useEffect(() => {
-    const worker = new Worker(
-      new URL('../workers/embedding.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
+    let timedOut = false;
+
+    const timeoutId = setTimeout(() => {
+      if (!timedOut) {
+        timedOut = true;
+        setProgress({
+          status: 'error',
+          progress: 0,
+          message: 'Timed out waiting for AI worker to start. Check browser console for errors.',
+        });
+      }
+    }, 15000);
+
+    let worker: Worker;
+
+    try {
+      worker = new Worker(
+        new URL('../workers/embedding.worker.ts', import.meta.url),
+        { type: 'module' },
+      );
+    } catch (err) {
+      clearTimeout(timeoutId);
+      setProgress({
+        status: 'error',
+        progress: 0,
+        message: 'Failed to create AI worker: ' + (err instanceof Error ? err.message : 'Unknown error'),
+      });
+      return;
+    }
+
     workerRef.current = worker;
 
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
       const response = event.data;
+
+      if (!timedOut) {
+        timedOut = true;
+        clearTimeout(timeoutId);
+      }
 
       if (response.type === 'progress') {
         setProgress({
@@ -49,7 +80,21 @@ export function useEmbedding() {
       }
     };
 
+    worker.onerror = (err) => {
+      if (!timedOut) {
+        timedOut = true;
+        clearTimeout(timeoutId);
+      }
+      setProgress({
+        status: 'error',
+        progress: 0,
+        message: 'AI worker error: ' + err.message,
+      });
+    };
+
     return () => {
+      clearTimeout(timeoutId);
+      timedOut = true;
       worker.terminate();
     };
   }, []);
