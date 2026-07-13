@@ -6,20 +6,70 @@ import {
 
 env.allowLocalModels = false;
 
+async function detectWebGPU(): Promise<boolean> {
+  if (typeof navigator === 'undefined' || !('gpu' in navigator)) {
+    return false;
+  }
+  try {
+    const adapter = await (navigator as any).gpu.requestAdapter();
+    if (!adapter) {
+      return false;
+    }
+    await adapter.requestDevice();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 class PipelineSingleton {
   private static task = 'feature-extraction' as const;
   private static model = 'Xenova/all-MiniLM-L6-v2';
   private static instance: Promise<FeatureExtractionPipeline> | null = null;
+  private static backend: string = 'wasm';
 
   public static async getInstance(
     progress_callback?: (data: any) => void,
   ): Promise<FeatureExtractionPipeline> {
     if (this.instance === null) {
-      this.instance = pipeline(this.task, this.model, {
-        progress_callback,
-      }) as Promise<FeatureExtractionPipeline>;
+      this.instance = this.initPipeline(progress_callback);
     }
     return this.instance;
+  }
+
+  private static async initPipeline(
+    progress_callback?: (data: any) => void,
+  ): Promise<FeatureExtractionPipeline> {
+    const hasWebGPU = await detectWebGPU();
+    const options: Record<string, any> = {
+      progress_callback,
+    };
+
+    if (hasWebGPU) {
+      options.device = 'webgpu';
+      this.backend = 'webgpu';
+      try {
+        const pipe = await pipeline(this.task, this.model, options);
+        return pipe as FeatureExtractionPipeline;
+      } catch (err) {
+        console.warn('WebGPU init failed, falling back to WebAssembly:', err);
+        self.postMessage({
+          type: 'progress',
+          status: 'loading',
+          progress: 100,
+          message: 'WebGPU failed, falling back to WASM',
+        });
+      }
+    }
+
+    this.backend = 'wasm';
+    delete options.device;
+    const pipe = await pipeline(this.task, this.model, options);
+    return pipe as FeatureExtractionPipeline;
+  }
+
+  public static getBackend(): string {
+    return this.backend;
   }
 }
 
@@ -46,11 +96,15 @@ self.addEventListener('message', async (event: MessageEvent) => {
         }
       });
 
+      const backend = PipelineSingleton.getBackend();
       self.postMessage({
         type: 'progress',
         status: 'ready',
         progress: 100,
-        message: 'AI model is ready',
+        message:
+          backend === 'webgpu'
+            ? 'AI model ready (WebGPU)'
+            : 'AI model ready (WASM)',
       });
 
       const output = await pipe(text, {
