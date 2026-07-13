@@ -31,6 +31,7 @@ export type EmbeddingProgress = {
 
 export type WorkerRequest = {
   type: 'embed';
+  id: string;
   text: string;
 };
 

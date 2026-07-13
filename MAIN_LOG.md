@@ -27,3 +27,20 @@ Date: 13 July 2026
   - `utils/` - Utility functions
   - `types/` - TypeScript type definitions
   - `db/` - IndexedDB helpers
+
+## Phase 2 - Web Worker and Local Inference (Branch: feature/phase-2-web-worker)
+
+Date: 13 July 2026
+
+### Commands Run
+- `npm install @huggingface/transformers` - Installed Hugging Face transformers package for running local AI models
+- `npm run build` - Ran TypeScript compile and Vite build to check for compilation errors
+- `npm run lint` - Ran linter to check code style and syntax issues
+- `npm run format` - Formatted all source files with Prettier
+
+### Files Created / Modified
+- `src/types/index.ts` - Added note id to the WorkerRequest type
+- `src/workers/embedding.worker.ts` - Created background worker script that loads Xenova/all-MiniLM-L6-v2 model and generates text embeddings locally
+- `src/hooks/useEmbedding.ts` - Created custom hook to manage the lifecycle of the worker and communicate embedding results to the main app thread
+- `MAIN_LOG.md` - Documented activities for Phase 2
+
