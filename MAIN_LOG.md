@@ -65,4 +65,21 @@ Date: 13 July 2026
 ### Review Fixes (Agent 2)
 - `src/utils/vector.ts` - Replaced Math.hypot with a simple loop in the normalize function to prevent call stack issues and improve efficiency on large arrays
 
+## Phase 4 - Applied Spatial Graph Physics (Branch: feature/phase-4-graph-physics)
+
+Date: 13 July 2026
+
+### Commands Run
+- `npm install react-force-graph-2d` - Installed react-force-graph-2d to render the network graph on canvas
+- `npm run build` - Compiled TypeScript and built the client to check for packaging issues
+- `npm run lint` - Ran linter checks on the code changes
+- `npm run format` - Ran Prettier to format codebase files
+
+### Files Modified
+- `package.json` - Added react-force-graph-2d to dependencies
+- `src/App.tsx` - Created app UI layout, integrated note hook, and embedded force graph with customized D3 physics (charge repulsion and semantic link attraction)
+- `src/App.css` - Created dark mode stylesheet with styling for the sidebar, form input, notes list, and graph container
+- `MAIN_LOG.md` - Documented activities for Phase 4
+
+
 
