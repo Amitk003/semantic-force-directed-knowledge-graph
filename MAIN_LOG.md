@@ -81,5 +81,9 @@ Date: 13 July 2026
 - `src/App.css` - Created dark mode stylesheet with styling for the sidebar, form input, notes list, and graph container
 - `MAIN_LOG.md` - Documented activities for Phase 4
 
-
-
+### Review Fixes (Agent 1)
+- `src/App.tsx` - Moved setSubmitting state to top with other useState calls
+- `src/App.tsx` - Changed text to "Local AI Note Clustering"
+- `src/App.tsx` - Replaced `any` types with proper ForceGraphMethods, NodeObject, and LinkObject types from react-force-graph-2d
+- `src/App.tsx` - Added cleanup return in useEffect to reheat simulation on unmount
+- `src/App.tsx` - Added null checks for d3Force before calling strength/distance/strength

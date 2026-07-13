@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useKnowledgeGraph } from './hooks/useKnowledgeGraph';
-import ForceGraph2D from 'react-force-graph-2d';
+import ForceGraph2D, {
+  type ForceGraphMethods,
+  type LinkObject,
+} from 'react-force-graph-2d';
+import type { GraphNode, GraphLink } from './types';
 import './App.css';
 
 function App() {
@@ -8,18 +12,33 @@ function App() {
     useKnowledgeGraph();
 
   const [inputText, setInputText] = useState('');
-  const fgRef = useRef<any>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const fgRef = useRef<ForceGraphMethods<GraphNode, GraphLink>>(undefined);
 
   useEffect(() => {
-    if (fgRef.current) {
-      fgRef.current.d3Force('charge').strength(-150);
-      fgRef.current
-        .d3Force('link')
-        .distance((link: any) => (1 - link.similarity) * 120)
-        .strength((link: any) => link.similarity);
+    const fg = fgRef.current;
+    if (!fg) {
+      return;
     }
+
+    const chargeForce = fg.d3Force('charge');
+    if (chargeForce) {
+      chargeForce.strength(-150);
+    }
+
+    const linkForce = fg.d3Force('link');
+    if (linkForce) {
+      linkForce
+        .distance(
+          (link: unknown) => (1 - (link as LinkObject).similarity) * 120,
+        )
+        .strength((link: unknown) => (link as LinkObject).similarity);
+    }
+
+    return () => {
+      fg.d3ReheatSimulation();
+    };
   }, [graphData]);
-  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +65,7 @@ function App() {
       <aside className="sidebar">
         <header className="sidebar-header">
           <h1>Semantic Graph</h1>
-          <p>Local On-Device Note Clustering</p>
+          <p>Local AI Note Clustering</p>
         </header>
 
         <div className="status-box">
@@ -133,10 +152,12 @@ function App() {
             nodeLabel="label"
             nodeColor={() => '#58a6ff'}
             nodeVal={6}
-            linkWidth={(link: any) => link.similarity * 3}
+            linkWidth={(link: unknown) => (link as LinkObject).similarity * 3}
             linkColor={() => 'rgba(255, 255, 255, 0.2)'}
             linkDirectionalParticles={3}
-            linkDirectionalParticleSpeed={(link: any) => link.similarity * 0.02}
+            linkDirectionalParticleSpeed={(link: unknown) =>
+              (link as LinkObject).similarity * 0.02
+            }
           />
         )}
       </main>
