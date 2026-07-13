@@ -31,62 +31,44 @@ async function detectWebGPU(): Promise<boolean> {
   }
 }
 
-class PipelineSingleton {
-  private static task = 'feature-extraction' as const;
-  private static model = 'Xenova/all-MiniLM-L6-v2';
-  private static instance: Promise<any> | null = null;
-  private static backend: string = 'wasm';
+let pipelinePromise: Promise<any> | null = null;
+let pipelineBackend: string = 'wasm';
 
-  public static async getInstance(
-    progress_callback?: (data: any) => void,
-  ): Promise<any> {
-    if (this.instance === null) {
-      this.instance = this.initPipeline(progress_callback);
-    }
-    return this.instance;
+async function initPipeline(progressCallback: (data: any) => void): Promise<any> {
+  if (!pipelineFn) {
+    throw new Error('Transformers library not loaded');
   }
 
-  private static async initPipeline(
-    progress_callback?: (data: any) => void,
-  ): Promise<any> {
-    if (!pipelineFn) {
-      throw new Error('Transformers library not loaded');
+  const hasWebGPU = await detectWebGPU();
+  const options: Record<string, any> = {
+    progress_callback: progressCallback,
+  };
+
+  if (hasWebGPU) {
+    options.device = 'webgpu';
+    pipelineBackend = 'webgpu';
+    try {
+      const pipe = await pipelineFn('feature-extraction', 'Xenova/all-MiniLM-L6-v2', options);
+      return pipe;
+    } catch (err) {
+      console.warn('WebGPU init failed, falling back to WebAssembly:', err);
+      self.postMessage({
+        type: 'progress',
+        status: 'loading',
+        progress: 100,
+        message: 'WebGPU failed, falling back to WASM',
+      });
     }
-
-    const hasWebGPU = await detectWebGPU();
-    const options: Record<string, any> = {
-      progress_callback,
-    };
-
-    if (hasWebGPU) {
-      options.device = 'webgpu';
-      this.backend = 'webgpu';
-      try {
-        const pipe = await pipelineFn(this.task, this.model, options);
-        return pipe;
-      } catch (err) {
-        console.warn('WebGPU init failed, falling back to WebAssembly:', err);
-        self.postMessage({
-          type: 'progress',
-          status: 'loading',
-          progress: 100,
-          message: 'WebGPU failed, falling back to WASM',
-        });
-      }
-    }
-
-    this.backend = 'wasm';
-    delete options.device;
-    const pipe = await pipelineFn(this.task, this.model, options);
-    return pipe;
   }
 
-  public static getBackend(): string {
-    return this.backend;
-  }
+  pipelineBackend = 'wasm';
+  delete options.device;
+  const pipe = await pipelineFn('feature-extraction', 'Xenova/all-MiniLM-L6-v2', options);
+  return pipe;
 }
 
-loadTransformers().then((loaded) => {
+async function start() {
+  const loaded = await loadTransformers();
   if (!loaded) {
     return;
   }
@@ -95,42 +77,52 @@ loadTransformers().then((loaded) => {
     type: 'progress',
     status: 'loading',
     progress: 0,
-    message: 'AI worker initialized, waiting for notes...',
+    message: 'Loading AI model...',
   });
+
+  try {
+    pipelinePromise = initPipeline((data: any) => {
+      if (data.status === 'progress') {
+        self.postMessage({
+          type: 'progress',
+          status: 'downloading',
+          progress: data.progress,
+          message: `Downloading model weights: ${Math.round(data.progress)}%`,
+        });
+      } else if (data.status === 'ready') {
+        self.postMessage({
+          type: 'progress',
+          status: 'loading',
+          progress: 100,
+          message: 'Loading model into memory...',
+        });
+      }
+    });
+
+    await pipelinePromise;
+
+    self.postMessage({
+      type: 'progress',
+      status: 'ready',
+      progress: 100,
+      message: pipelineBackend === 'webgpu'
+        ? 'AI model ready (WebGPU)'
+        : 'AI model ready (WASM)',
+    });
+  } catch (err: any) {
+    self.postMessage({
+      type: 'error',
+      message: 'Failed to initialize AI model: ' + (err.message || 'Unknown error'),
+    });
+    return;
+  }
 
   self.addEventListener('message', async (event: MessageEvent) => {
     const { type, id, text } = event.data;
 
     if (type === 'embed') {
       try {
-        const pipe = await PipelineSingleton.getInstance((data) => {
-          if (data.status === 'progress') {
-            self.postMessage({
-              type: 'progress',
-              status: 'downloading',
-              progress: data.progress,
-              message: `Downloading model weights: ${Math.round(data.progress)}%`,
-            });
-          } else if (data.status === 'ready') {
-            self.postMessage({
-              type: 'progress',
-              status: 'loading',
-              progress: 100,
-              message: 'Loading model into memory...',
-            });
-          }
-        });
-
-        const backend = PipelineSingleton.getBackend();
-        self.postMessage({
-          type: 'progress',
-          status: 'ready',
-          progress: 100,
-          message:
-            backend === 'webgpu'
-              ? 'AI model ready (WebGPU)'
-              : 'AI model ready (WASM)',
-        });
+        const pipe = await pipelinePromise!;
 
         const output = await pipe(text, {
           pooling: 'mean',
@@ -152,4 +144,6 @@ loadTransformers().then((loaded) => {
       }
     }
   });
-});
+}
+
+start();
