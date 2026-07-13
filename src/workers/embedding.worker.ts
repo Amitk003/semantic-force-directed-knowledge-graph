@@ -32,43 +32,40 @@ class PipelineSingleton {
     progress_callback?: (data: any) => void,
   ): Promise<FeatureExtractionPipeline> {
     if (this.instance === null) {
-      const hasWebGPU = await detectWebGPU();
-      const options: Record<string, any> = {
-        progress_callback,
-      };
-
-      if (hasWebGPU) {
-        options.device = 'webgpu';
-        this.backend = 'webgpu';
-      }
-
-      try {
-        this.instance = pipeline(
-          this.task,
-          this.model,
-          options,
-        ) as Promise<FeatureExtractionPipeline>;
-      } catch (err) {
-        if (this.backend === 'webgpu') {
-          self.postMessage({
-            type: 'progress',
-            status: 'loading',
-            progress: 100,
-            message: 'WebGPU not available, falling back to WASM',
-          });
-          this.backend = 'wasm';
-          delete options.device;
-          this.instance = pipeline(
-            this.task,
-            this.model,
-            options,
-          ) as Promise<FeatureExtractionPipeline>;
-        } else {
-          throw err;
-        }
-      }
+      this.instance = this.initPipeline(progress_callback);
     }
     return this.instance;
+  }
+
+  private static async initPipeline(
+    progress_callback?: (data: any) => void,
+  ): Promise<FeatureExtractionPipeline> {
+    const hasWebGPU = await detectWebGPU();
+    const options: Record<string, any> = {
+      progress_callback,
+    };
+
+    if (hasWebGPU) {
+      options.device = 'webgpu';
+      this.backend = 'webgpu';
+      try {
+        const pipe = await pipeline(this.task, this.model, options);
+        return pipe as FeatureExtractionPipeline;
+      } catch (err) {
+        console.warn('WebGPU init failed, falling back to WebAssembly:', err);
+        self.postMessage({
+          type: 'progress',
+          status: 'loading',
+          progress: 100,
+          message: 'WebGPU failed, falling back to WASM',
+        });
+      }
+    }
+
+    this.backend = 'wasm';
+    delete options.device;
+    const pipe = await pipeline(this.task, this.model, options);
+    return pipe as FeatureExtractionPipeline;
   }
 
   public static getBackend(): string {

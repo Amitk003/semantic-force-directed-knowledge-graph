@@ -118,4 +118,8 @@ Date: 13 July 2026
 ### Files Modified
 - `src/workers/embedding.worker.ts` - Added WebGPU detection that tries WebGPU first and falls back to WASM; backend info sent in progress messages
 - `src/App.tsx` - Updated status message to show dynamic backend info from worker
-- `README.md` - Added detailed features, usage instructions, demo/screenshot placeholders
+- `README.md` - Added detailed features, usage instructions, demo/screenshot placeholders
+
+### Review Fixes (Agent 2)
+- `src/workers/embedding.worker.ts` - Restructured the singleton model loader to properly catch asynchronous pipeline rejections and fall back to WebAssembly when WebGPU fails
+
