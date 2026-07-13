@@ -1,0 +1,7 @@
+node_modules
+dist
+dist-ssr
+*.local
+.gitignore
+.prettierignore
+.prettierrc
