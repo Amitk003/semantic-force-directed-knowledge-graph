@@ -18,7 +18,7 @@ function App() {
 
   // Interactive UI State
   const [searchQuery, setSearchQuery] = useState('');
-  const [similarityThreshold, setSimilarityThreshold] = useState(0.3);
+  const [similarityThreshold, setSimilarityThreshold] = useState(0.2);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
   const fgRef = useRef<ForceGraphMethods<GraphNode, GraphLink>>(undefined);

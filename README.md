@@ -1,72 +1,103 @@
-# Semantic Force Directed Knowledge Graph
+# Semantic Force-Directed Knowledge Graph
 
-A browser-based app that turns your notes into a visual graph. Related ideas automatically group together. Everything runs locally - no data is sent to any server.
+**Your thoughts, mapped. Automatically.**
+
+A browser-based knowledge graph app that reads your notes with on-device AI and arranges them into a living map of connected ideas. No data leaves your machine.
+
+---
 
 ## Problem
 
-Normal note-taking apps make you organize everything by hand. You have to create folders, add tags, and link notes yourself. This takes time and you might miss connections between your ideas.
+Every note-taking app makes you do the hard work. Folders. Tags. Manual links. You spend time organizing instead of thinking. And the connections between your ideas stay hidden inside the text you wrote.
 
 ## Solution
 
-This app uses AI to understand what your notes mean. When you add a note, the app finds other notes with similar meaning and puts them close together in a visual graph. You can see how your ideas connect without doing any manual work.
+This app uses a small AI model that runs entirely in your browser. Type a note. The AI reads it, understands its meaning, and places it near other notes with similar ideas. A force-directed graph builds itself before your eyes.
 
-## Features
+Related ideas cluster. Unrelated ideas drift apart. You see the shape of your thinking.
 
-- Add notes by typing text into the sidebar
-- Related notes automatically cluster together in the graph
-- Search notes by text - matching nodes stay visible, others dim
-- Adjust the similarity threshold slider to control how links are shown
-- Click a node to see full note text and ranked related notes
-- Delete notes you no longer need
-- Everything works offline after the first load
+## How It Uses On-Device AI
 
-## How It Works
+The app runs **all-MiniLM-L6-v2** via [Transformers.js](https://github.com/xenova/transformers.js) inside a Web Worker. It converts each note into a 384-dimensional embedding vector that captures semantic meaning. The model is ~23 MB, cached after first load.
 
-The AI runs completely inside your browser using a small model (all-MiniLM-L6-v2). This model converts your text into numbers (embeddings) that capture the meaning. The app then compares these numbers to find similar notes. If WebGPU is available, it uses it for faster performance. Otherwise it falls back to WASM.
+- **WebGPU** is used when available for 2-5x faster inference
+- **WASM fallback** ensures the app works on any modern browser
+- **Zero data leaves your device** - no API calls, no servers, no tracking
+- **Works offline** after the initial model download
+
+This is not a thin client calling a cloud API. This is real AI inference running locally in your browser tab.
 
 ## Tech Stack
 
-- React 19 with TypeScript
-- Vite for building
-- Transformers.js for running AI in the browser
-- react-force-graph-2d for the visual graph
-- IndexedDB for storing data locally
-- Web Workers for running AI without slowing down the UI
-- WebGPU for faster AI (falls back to WASM if not available)
+| Layer | Technology |
+|-------|-----------|
+| Framework | React 19 + TypeScript 6 |
+| Build | Vite 8 |
+| AI Inference | Transformers.js 4.2.0 (WebGPU / WASM) |
+| Graph Visualization | react-force-graph-2d (D3 force simulation) |
+| Storage | IndexedDB via idb-keyval |
+| Concurrency | Web Workers (Dedicated Worker for AI) |
+| Linting | Oxlint |
+| Formatting | Prettier |
 
 ## Setup
 
 ```bash
+git clone <repo-url>
+cd semantic-force-directed-knowledge-graph
 npm install
 npm run dev
 ```
 
-Open the URL shown in the terminal (usually http://localhost:5173).
+Open the URL shown in the terminal (usually `http://localhost:5173`).
 
 ## Usage
 
-1. Wait for the AI model to download and load (shown in the sidebar)
-2. Type a note in the text box and click "Add Note"
-3. Watch as the note appears on the graph and moves close to related notes
-4. Click a node to see its full text and related notes ranked by similarity
-5. Use the search bar to find notes by text
-6. Use the threshold slider to control how connected notes appear
+1. **Wait for the AI model** to download and initialize (shown in the sidebar)
+2. **Add notes** by typing into the text box and clicking "Add Note"
+3. **Watch the graph grow** as new notes appear and move close to related ones
+4. **Click a node** to read the full note and see ranked related notes
+5. **Search** by text to highlight matching nodes
+6. **Adjust the threshold slider** to control how similar notes must be to show a connection
+7. **Delete notes** you no longer need with the delete button
 
-## Build
+## Demo Video
+
+(Add your demo video link here)
+
+## Screenshots
+
+(Add screenshots here)
+
+## Project Structure
+
+```
+docs/
+  USECASE.md          - Problem, solution, and real-world scenarios
+  ARCHITECTURE.md     - Technical architecture and data flow
+  ON_DEVICE_AI.md     - How on-device AI works in detail
+  FUTURE_SCOPE.md     - Future plans and known limitations
+src/
+  App.tsx             - Main UI with graph, sidebar, search
+  hooks/              - useEmbedding, useKnowledgeGraph
+  workers/            - Web Worker with Transformers.js
+  utils/vector.ts     - Vector math utilities
+  db/notes.ts         - IndexedDB operations
+  types/              - TypeScript type definitions
+SAMPLE_THOUGHTS.md    - Pre-built notes to test the demo
+```
+
+## Build for Production
 
 ```bash
 npm run build
 npm run preview
 ```
 
-## Demo Video
-
-(Add link to your demo video here)
-
-## Screenshots
-
-(Add screenshots here)
-
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE) for details.
+
+---
+
+Built with React, Transformers.js, and a belief that your data should stay yours.
