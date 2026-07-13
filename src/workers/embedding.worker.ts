@@ -46,6 +46,13 @@ self.addEventListener('message', async (event: MessageEvent) => {
         }
       });
 
+      self.postMessage({
+        type: 'progress',
+        status: 'ready',
+        progress: 100,
+        message: 'AI model is ready',
+      });
+
       const output = await pipe(text, {
         pooling: 'mean',
         normalize: true,

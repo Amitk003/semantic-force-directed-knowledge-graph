@@ -49,12 +49,6 @@ export function useEmbedding() {
       }
     };
 
-    setProgress({
-      status: 'ready',
-      progress: 100,
-      message: 'AI Model environment ready',
-    });
-
     return () => {
       worker.terminate();
     };
