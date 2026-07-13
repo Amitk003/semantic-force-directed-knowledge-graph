@@ -1,5 +1,9 @@
 export function normalize(vector: number[]): number[] {
-  const magnitude = Math.hypot(...vector);
+  let sum = 0;
+  for (let i = 0; i < vector.length; i++) {
+    sum += vector[i] * vector[i];
+  }
+  const magnitude = Math.sqrt(sum);
   if (magnitude === 0) {
     return vector;
   }

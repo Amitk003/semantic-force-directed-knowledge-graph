@@ -62,3 +62,7 @@ Date: 13 July 2026
 - `src/db/notes.ts` - IndexedDB CRUD operations for notes (saveNote, getAllNotes, deleteNote)
 - `src/hooks/useKnowledgeGraph.ts` - Main hook combining embedding, storage, and similarity graph building
 
+### Review Fixes (Agent 2)
+- `src/utils/vector.ts` - Replaced Math.hypot with a simple loop in the normalize function to prevent call stack issues and improve efficiency on large arrays
+
+
