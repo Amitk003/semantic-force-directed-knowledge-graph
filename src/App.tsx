@@ -214,9 +214,7 @@ function App() {
             </div>
           )}
           {progress.status === 'ready' && (
-            <div className="status-message ready">
-              Model ready (WebGPU/WASM)
-            </div>
+            <div className="status-message ready">{progress.message}</div>
           )}
         </div>
 

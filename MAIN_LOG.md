@@ -104,4 +104,18 @@ Date: 13 July 2026
 
 ### Review Fixes (Agent 1)
 - `src/App.tsx` - Wrapped filteredLinks, neighbors, and relatedNotes in useMemo to avoid recomputation on every render
-- `src/App.tsx` - Wrapped drawNode and handleNodeClick in useCallback to prevent unnecessary graph re-renders
+- `src/App.tsx` - Wrapped drawNode and handleNodeClick in useCallback to prevent unnecessary graph re-renders
+
+## Phase 6 - WebGPU Detection and Final Polish (Branch: feature/phase-6-qa-webgpu)
+
+Date: 13 July 2026
+
+### Commands Run
+- `npm run build` - Compiled TypeScript and Vite build
+- `npm run lint` - Linter check
+- `npm run build` (after fix) - Rebuild after removing unused variable
+
+### Files Modified
+- `src/workers/embedding.worker.ts` - Added WebGPU detection that tries WebGPU first and falls back to WASM; backend info sent in progress messages
+- `src/App.tsx` - Updated status message to show dynamic backend info from worker
+- `README.md` - Added detailed features, usage instructions, demo/screenshot placeholders
