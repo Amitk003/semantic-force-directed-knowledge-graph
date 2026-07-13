@@ -48,3 +48,21 @@ Date: 13 July 2026
 - `src/hooks/useEmbedding.ts` - Removed premature setProgress('ready') call after worker creation that showed 'ready' before model was actually loaded
 - `src/workers/embedding.worker.ts` - Added a 'ready' progress message after pipeline singleton resolves so the UI knows when the model is fully ready
 
+## Phase 3 - Vector Math and Local Storage (Branch: feature/phase-3-vector-storage)
+
+Date: 13 July 2026
+
+### Commands Run
+- `npm install idb-keyval` - Installed lightweight IndexedDB wrapper
+- `npm run build` - TypeScript compile and Vite build
+- `npm run lint` - Linter check
+
+### Files Created
+- `src/utils/vector.ts` - Vector math utilities (normalize, dotProduct, cosineSimilarity)
+- `src/db/notes.ts` - IndexedDB CRUD operations for notes (saveNote, getAllNotes, deleteNote)
+- `src/hooks/useKnowledgeGraph.ts` - Main hook combining embedding, storage, and similarity graph building
+
+### Review Fixes (Agent 2)
+- `src/utils/vector.ts` - Replaced Math.hypot with a simple loop in the normalize function to prevent call stack issues and improve efficiency on large arrays
+
+
