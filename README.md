@@ -63,11 +63,7 @@ Open the URL shown in the terminal (usually `http://localhost:5173`).
 
 ## Demo Video
 
-(Add your demo video link here)
-
-## Screenshots
-
-(Add screenshots here)
+[Watch the demo on YouTube](https://youtu.be/JsbRO4EEAwg)
 
 ## Project Structure
 
