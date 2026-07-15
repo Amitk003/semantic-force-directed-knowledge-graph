@@ -47,6 +47,18 @@ The model is pre-trained and only used for **inference** (computing embeddings).
 | Embed 10 sentences | ~300ms | ~1.5s |
 | Compute 100x100 similarity matrix | <10ms | <10ms |
 
+## Internet Requirements
+
+| Operation | Internet Needed? | Details |
+|---|---|---|
+| First-time model download | Yes | ~23 MB download from Hugging Face CDN. Cached by browser afterward. |
+| Adding notes | No | Embedding runs locally. Zero data sent over network. |
+| Viewing the graph | No | All data is local. |
+| Searching | No | Runs locally against stored embeddings. |
+| Deleting notes | No | IndexedDB operation, fully local. |
+
+After the initial model download, the app works fully offline.
+
 ## Privacy Guarantee
 
 - Zero data is sent to any server

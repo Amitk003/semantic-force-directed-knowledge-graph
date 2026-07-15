@@ -8,6 +8,17 @@ The app is a single-page React application that runs entirely in the browser. It
 2. **Worker Layer** - A Web Worker that runs Transformers.js for AI embedding, keeping the main thread responsive
 3. **Storage Layer** - IndexedDB via idb-keyval for persisting notes and their embeddings
 
+## Model Pipeline
+
+1. **Download** - The all-MiniLM-L6-v2 model (~23 MB) is downloaded from Hugging Face CDN on first use and cached by the browser
+2. **Load** - Transformers.js loads the model into a Web Worker using the ONNX runtime backend
+3. **Tokenize** - Input text is tokenized into WordPiece tokens (max 256 tokens per note)
+4. **Infer** - The model runs a forward pass through 6 transformer layers to produce a 384-dimensional embedding
+5. **Normalize** - The output embedding is L2-normalized for cosine similarity computation
+6. **Cache** - The normalized embedding is stored in IndexedDB alongside the note text
+
+The pipeline runs inside a Web Worker so the UI stays responsive during inference.
+
 ## Data Flow
 
 ```
